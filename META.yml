@@ -1,5 +1,5 @@
 name: Kwiki-FetchRSS
-version: 0.04
+version: 0.05
 abstract: WAFL Plugin To Fetch an RSS Feed
 license: perl
 distribution_type: module

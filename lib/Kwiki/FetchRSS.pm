@@ -4,7 +4,7 @@ use warnings;
 use Kwiki::Plugin '-Base';
 use Kwiki::Installer '-base';
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 const class_id    => 'fetchrss';
 const class_title => 'Fetch RSS';
@@ -29,7 +29,7 @@ sub get_content {
 
     require LWP::UserAgent;
     my $ua  = LWP::UserAgent->new();
-    $ua->timeout($self->hub->config->fetchrss_ua_timeout());
+    $ua->timeout($self->hub->config->fetchrss_ua_timeout);
     if ( $self->hub->config->fetchrss_proxy ne '' ) {
         $ua->proxy([ 'http' ], $self->hub->config->fetchrss_proxy);
     }
@@ -76,6 +76,8 @@ sub get_rss {
 
     if (defined($content)) {
         my $rss = XML::RSS->new();
+        # XXX needs to be an eval here, sometimes the parse
+        # make poop on bad input
         $rss->parse($content);
         return $rss;
     } else {
@@ -168,12 +170,12 @@ Error: [% error %]
 </center>
 </div>
 
-[% FOREACH items %]
+[% FOREACH item = items %]
  <div class="fetchrss_item">
-   <a href="[% link %]">[% title %]</a><br>
-   [% IF full && description %]
+     <a href="[% item.link %]">[% item.title %]</a><br />
+   [% IF full && item.description %]
      <blockquote class="fetchrss_description">
-     [% description %]
+         [% item.description %]
      </blockquote>
    [% END %]
  </div>
@@ -188,7 +190,7 @@ Error: [% error %]
 <!-- END fetchrss.html -->
 __config/fetchrss.yaml__
 fetchrss_proxy:
-fetchrss_ua_timeout: 10
+fetchrss_ua_timeout: 30
 fetchrss_default_expire: 1h
 __css/fetchrss.css__
 .fetchrss_box {

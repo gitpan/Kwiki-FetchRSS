@@ -1,4 +1,9 @@
 ---
+version: 0.05
+date: Sun Jan 30 22:41:58 PST 2005
+changes:
+- Correct a bug in foreach loop in template that was causing duplicate output
+---
 version: 0.04
 date: Wed Jan 19 15:32:53 PST 2005
 changes:
