@@ -1,0 +1,3 @@
+
+* use a different cache so we can store the XML::RSS
+  object rather than the xml file. This will save parsing time.

@@ -3,11 +3,8 @@ use strict;
 use warnings;
 use Kwiki::Plugin '-Base';
 use Kwiki::Installer '-base';
-use LWP::UserAgent;
-use XML::RSS;
-use Cache::FileCache;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 const class_id    => 'fetchrss';
 const class_title => 'Fetch RSS';
@@ -29,6 +26,8 @@ sub cache_dir {
 sub get_content {
     my $url = shift;
     my $content;
+
+    require LWP::UserAgent;
     my $ua  = LWP::UserAgent->new();
     $ua->timeout($self->hub->config->fetchrss_ua_timeout());
     if ( $self->hub->config->fetchrss_proxy ne '' ) {
@@ -45,6 +44,7 @@ sub get_content {
 }
 
 sub setup_cache {
+    require Cache::FileCache;
     $self->cache(Cache::FileCache->new( {
          namespace   => $self->class_id,
          cache_root  => $self->cache_dir,
@@ -60,6 +60,9 @@ sub get_cached_result {
 
 sub get_rss {
     my ($url, $expire) = @_;
+
+    require XML::RSS;
+
     $self->expire($expire
         ? $expire
         : $self->hub->config->fetchrss_default_expire()
