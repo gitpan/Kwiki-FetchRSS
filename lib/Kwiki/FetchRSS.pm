@@ -4,7 +4,7 @@ use warnings;
 use Kwiki::Plugin '-Base';
 use Kwiki::Installer '-base';
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 const class_id    => 'fetchrss';
 const class_title => 'Fetch RSS';
@@ -36,7 +36,11 @@ sub get_content {
     my $response = $ua->get($url);
     if ($response->is_success()) {
         $content  = $response->content();
-        $self->cache->set( $url, $content, $self->expire );
+        if (length($content)) {
+            $self->cache->set( $url, $content, $self->expire );
+        } else {
+            $self->error('zero length response');
+        }
     } else {
         $self->error($response->status_line);
     }
@@ -70,19 +74,21 @@ sub get_rss {
     $self->setup_cache;
 
     my $content = $self->get_cached_result($url);
-    if ( !defined($content) ) {
+    if ( !defined($content) or !length($content) ) {
         $content = $self->get_content($url);
     }
 
-    if (defined($content)) {
+    if (defined($content) and length($content)) {
         my $rss = XML::RSS->new();
         # XXX needs to be an eval here, sometimes the parse
         # make poop on bad input
-        $rss->parse($content);
-        return $rss;
-    } else {
-        return {error => $self->error};
+        eval {
+            $rss->parse($content);
+        };
+        return $rss unless $@;
+        $self->error('xml parser error');
     }
+    return {error => $self->error};
 }
 
 package Kwiki::FetchRSS::Wafl;
