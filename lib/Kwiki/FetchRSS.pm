@@ -1,10 +1,8 @@
 package Kwiki::FetchRSS;
-use strict;
-use warnings;
 use Kwiki::Plugin '-Base';
 use Kwiki::Installer '-base';
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 const class_id    => 'fetchrss';
 const class_title => 'Fetch RSS';
@@ -13,6 +11,7 @@ const css_file    => 'fetchrss.css';
 field 'cache';
 field 'error';
 field 'expire';
+field 'timeout' => -init => '$self->hub->config->fetchrss_ua_timeout';
 
 sub register {
     my $registry = shift;
@@ -29,8 +28,9 @@ sub get_content {
 
     require LWP::UserAgent;
     my $ua  = LWP::UserAgent->new();
-    $ua->timeout($self->hub->config->fetchrss_ua_timeout);
-    if ( $self->hub->config->fetchrss_proxy ne '' ) {
+    $ua->timeout($self->timeout);
+    if (defined($self->hub->config->fetchrss_proxy) and
+        $self->hub->config->fetchrss_proxy ne '' ) {
         $ua->proxy([ 'http' ], $self->hub->config->fetchrss_proxy);
     }
     my $response = $ua->get($url);
@@ -97,8 +97,7 @@ use base 'Spoon::Formatter::WaflPhrase';
 
 sub to_html {
     my ($url, $full, $expire) = split(/,?\s+/, $self->arguments);
-    $self->use_class('fetchrss');
-    my $rss = $self->fetchrss->get_rss($url, $expire);
+    my $rss = $self->hub->fetchrss->get_rss($url, $expire);
     $self->hub->template->process('fetchrss.html', full => $full, %$rss);
 }
 
