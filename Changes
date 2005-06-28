@@ -1,4 +1,10 @@
 ---
+version: 0.08
+date: Mon Jun 27 22:34:41 PDT 2005
+changes:
+- Support Atom feeds by switching to XML::Feed
+- Clean up some formatting
+---
 version: 0.07
 date: Sun Mar 20 02:50:24 PST 2005
 changes:

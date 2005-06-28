@@ -2,7 +2,7 @@ package Kwiki::FetchRSS;
 use Kwiki::Plugin '-Base';
 use Kwiki::Installer '-base';
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 const class_id    => 'fetchrss';
 const class_title => 'Fetch RSS';
@@ -62,10 +62,9 @@ sub get_cached_result {
     return($self->cache->get($name));
 }
 
-sub get_rss {
-    my ($url, $expire) = @_;
+sub get_feed { my ($url, $expire) = @_;
 
-    require XML::RSS;
+    require XML::Feed;
 
     $self->expire($expire
         ? $expire
@@ -79,14 +78,14 @@ sub get_rss {
     }
 
     if (defined($content) and length($content)) {
-        my $rss = XML::RSS->new();
+        my $feed; 
         # XXX needs to be an eval here, sometimes the parse
         # make poop on bad input
         eval {
-            $rss->parse($content);
+            $feed = XML::Feed->parse(\$content) or die XML::Feed->errstr;
         };
-        return $rss unless $@;
-        $self->error('xml parser error');
+        return $feed unless $@;
+        $self->error("xml parser error: $@");
     }
     return {error => $self->error};
 }
@@ -97,8 +96,11 @@ use base 'Spoon::Formatter::WaflPhrase';
 
 sub to_html {
     my ($url, $full, $expire) = split(/,?\s+/, $self->arguments);
-    my $rss = $self->hub->fetchrss->get_rss($url, $expire);
-    $self->hub->template->process('fetchrss.html', full => $full, %$rss);
+    return $self->wafl_error unless $url;
+    my $feed = $self->hub->fetchrss->get_feed($url, $expire);
+    $self->hub->template->process('fetchrss.html', full => $full,
+        method => $self->method, fetchrss_url => $url,
+        feed => $feed);
 }
 
 
@@ -150,45 +152,45 @@ __template/tt2/fetchrss.html__
 <!-- BEGIN fetchrss.html -->
 <div class="fetchrss_box">
 <div class="fetchrss_titlebox">
-[% IF error %]
-Error: [% error %]
+[% IF feed.error %]
+Error: [% feed.error %]
 [% END %]
-[% IF image.link && image.url %]
 <center>
-<a href="[% image.link %]">
- <img src="[% image.url %]"
-  alt="[% image.title %]"
+[% IF feed.rss.image.link && feed.rss.image.url %]
+<a href="[% feed.rss.image.link %]">
+ <img src="[% feed.rss.image.url %]"
+  alt="[% feed.rss.image.title %]"
   border="0"
-  [% IF image.width %]
-   width="[% image.width %]"
+  [% IF feed.rss.image.width %]
+   width="[% feed.rss.image.width %]"
   [% END %]
-  [% IF image.height %]
-   heigth="[% image.heigth %]"
+  [% IF feed.rss.image.height %]
+   height="[% feed.rss.image.height %]"
   [% END %]
 [% END %]
 
-[% IF channel.title %]
+[% IF feed.title %]
  <div class="fetchrss_title">
-   <a href="[% channel.link %]">[% channel.title %]</a></h3>
+   <a href="[% feed.link %]">[% feed.title %]</a></h3>
  </div>
 [% END %]
 </center>
 </div>
 
-[% FOREACH item = items %]
+[% FOREACH item = feed.entries %]
  <div class="fetchrss_item">
      <a href="[% item.link %]">[% item.title %]</a><br />
-   [% IF full && item.description %]
+   [% IF full && item.content.body %]
      <blockquote class="fetchrss_description">
-         [% item.description %]
+         [% item.content.body %]
      </blockquote>
    [% END %]
  </div>
 [% END %]
 
-[% IF channel.copyright %]
+[% IF feed.channel.copyright %]
 <div class="fetchrss_titlebox">
-<sub>[% channel.copyright %]</sub>
+<sub>[% feed.channel.copyright %]</sub>
 </div>
 [% END %]
 </div>
@@ -214,4 +216,3 @@ __css/fetchrss.css__
 .fetchrss_title { font-weight: bold; font-size: large;}
 .fetchrss_item { padding-left: 5px; }
 .fetchrss_description { font-size: smaller; }
-

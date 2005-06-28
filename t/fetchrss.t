@@ -8,6 +8,9 @@ my @tests = (
     [ "\n{fetchrss http://www.burningchrome.com/~cdent/mt/index.xml}\n\n" =>
       qr{Glacial Erratics}
     ],
+    [ "\n{fetchrss http://www.flickr.com/services/feeds/photos_public.gne?id=44124457654\@N01&format=atom_03 1}\n\n" =>
+      qr{cdent's Photos}
+    ],
 );
 
 my $test_count = scalar @tests;
